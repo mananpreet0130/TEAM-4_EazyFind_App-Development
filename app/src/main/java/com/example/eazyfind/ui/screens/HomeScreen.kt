@@ -358,7 +358,7 @@ fun HomeScreen(
             ModalBottomSheet(onDismissRequest = { showFilterSheet = false }) {
                 RestaurantFilterSheet(
                     filter = apiFilter,
-                    cuisines = cuisineViewModel.cuisines.value,
+                    cuisines = cuisineViewModel.cuisines.value.sortedBy { it.name?.lowercase() },
                     mealTypes = mealTypeViewModel.mealTypes.value,
                     restaurants = restaurants,
                     onFilterChange = { apiFilter = it },

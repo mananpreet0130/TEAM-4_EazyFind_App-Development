@@ -4,6 +4,16 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Groups2
+import androidx.compose.material.icons.filled.Groups3
+import androidx.compose.material.icons.filled.PeopleOutline
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.eazyfind.data.model.Restaurant
 import com.example.eazyfind.ui.themes.DarkText
+import com.example.eazyfind.ui.themes.PrimaryColor
 import com.example.eazyfind.ui.themes.SuccessGreen
 import com.example.eazyfind.ui.utils.normalizeCity
 
@@ -138,12 +149,26 @@ fun RestaurantCard(
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "👥 ₹${restaurant.cost_for_two}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = DarkText
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PeopleOutline,
+                                contentDescription = "Cost for two",
+                                modifier = Modifier.size(13.dp),
+                                tint = DarkText
+                            )
+
+                            Spacer(modifier = Modifier.width(1.dp))
+
+                            Text(
+                                text = "₹${restaurant.cost_for_two}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DarkText
+                            )
+                        }
                     }
+
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -165,11 +190,26 @@ fun RestaurantCard(
                         )
                     }
 
-                    Text(
-                        text = "⭐ ${restaurant.rating}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = DarkText
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.StarBorder,
+                                contentDescription = "Rating",
+                                modifier = Modifier.size(11.dp),
+                                tint = PrimaryColor
+                            )
+
+                            Text(
+                                text = "${restaurant.rating}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = PrimaryColor
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))

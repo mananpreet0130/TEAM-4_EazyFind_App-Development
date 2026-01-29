@@ -51,6 +51,8 @@ fun RestaurantFilterSheet(
 
     var visible by remember { mutableStateOf(true) }
 
+    var tempRating by remember { mutableStateOf(filter.rating) }
+
     LaunchedEffect(visible) {
         if (!visible) {
             delay(200) // matches fadeOut default duration
@@ -133,13 +135,17 @@ fun RestaurantFilterSheet(
                 Text("Minimum Rating", style = MaterialTheme.typography.titleMedium)
 
                 Slider(
-                    value = filter.rating,
+                    value = tempRating,
                     onValueChange = {
-                        onFilterChange(filter.copy(rating = it))
+                        tempRating = it
+                    },
+                    onValueChangeFinished = {
+                        onFilterChange(filter.copy(rating = tempRating))
                     },
                     valueRange = 0f..5f,
                     steps = 4
                 )
+
 
                 Text(
                     if (filter.rating.toInt() < 5)
