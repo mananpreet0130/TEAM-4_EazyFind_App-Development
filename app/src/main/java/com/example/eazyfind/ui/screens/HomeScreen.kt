@@ -1,7 +1,9 @@
 package com.example.eazyfind.ui.screens
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -21,6 +23,40 @@ import com.example.eazyfind.ui.themes.AppBackground
 import com.example.eazyfind.ui.themes.DarkText
 import com.example.eazyfind.ui.utils.mapCityForApi
 import com.example.eazyfind.viewmodel.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import android.content.Context
+import android.content.pm.PackageManager
+
+fun openInChrome(context: Context, url: String) {
+    val uri = Uri.parse(url)
+
+    val chromePackage = "com.android.chrome"
+
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+        setPackage(chromePackage)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+
+    try {
+        // Try opening in Chrome
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // 🔁 Chrome not installed → fallback to system browser
+        val fallbackIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(fallbackIntent)
+    }
+}
 
 private fun formatCityName(raw: String): String {
     return raw
@@ -59,6 +95,12 @@ fun HomeScreen(
 
     var apiFilter by remember { mutableStateOf(RestaurantFilter()) }
 
+    var paginationError by remember { mutableStateOf<String?>(null) }
+
+    var isRequestingNextPage by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
     /* ---------------- SEARCH ---------------- */
 
     LaunchedEffect(searchQuery) {
@@ -89,6 +131,14 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         cuisineViewModel.cuisines.value
         mealTypeViewModel.mealTypes.value
+    }
+
+    /* ---------------- PAGINATION RESET GUARD ---------------- */
+
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            isRequestingNextPage = false
+        }
     }
 
     /* ---------------- UI ---------------- */
@@ -141,14 +191,6 @@ fun HomeScreen(
                     .padding(horizontal = 8.dp)
             ) {
 
-                if (isLoading && loadedCount > 0) {
-                    Text(
-                        text = "Loaded $loadedCount restaurants",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = DarkText.copy(alpha = 0.7f)
-                    )
-                }
-
                 if (error != null) {
                     Text(
                         text = error,
@@ -171,12 +213,23 @@ fun HomeScreen(
                     }
                 }
 
-
-                LazyColumn {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
 
                     itemsIndexed(restaurants) { index, restaurant ->
 
-                        if (index == restaurants.lastIndex && !isLoading) {
+                        if (
+                            index >= restaurants.lastIndex - 2 &&
+                            !isLoading &&
+                            !isRequestingNextPage &&
+                            restaurantViewModel.hasMoreData.value
+                        ) {
+                            isRequestingNextPage = true
+
                             restaurantViewModel.fetchNextPage(
                                 city =
                                     if (selectedCity == "Select Location") null
@@ -188,19 +241,66 @@ fun HomeScreen(
 
                         RestaurantCard(
                             restaurant = restaurant,
-                            onClick = { onRestaurantClick(restaurant.id) }
+                            onClick = {
+                                val url = restaurant.url ?: return@RestaurantCard
+
+                                val finalUrl =
+                                    if (url.startsWith("http://") || url.startsWith("https://"))
+                                        url
+                                    else
+                                        "https://$url"
+
+                                openInChrome(context, finalUrl)
+                            }
                         )
+
                     }
 
-                    if (isLoading) {
-                        item {
+                    // 🔄 LOADING MORE
+                    if (isLoading && restaurants.isNotEmpty()) {
+                        item(span = { GridItemSpan(2) }) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(vertical = 24.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator()
+                            }
+                        }
+                    }
+
+                    // ❌ PAGINATION ERROR + RETRY
+                    if (
+                        !isLoading &&
+                        error == null &&
+                        restaurants.isNotEmpty() &&
+                        !restaurantViewModel.hasMoreData.value
+                    ) {
+                        item(span = { GridItemSpan(2) }) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {                            }
+                        }
+                    }
+
+                    // ✅ NO MORE RESTAURANTS
+                    if (!isLoading && error == null && restaurants.isNotEmpty()) {
+                        item(span = { GridItemSpan(2) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "You’ve reached the end 🍽️",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = DarkText.copy(alpha = 0.6f)
+                                )
                             }
                         }
                     }
@@ -211,26 +311,42 @@ fun HomeScreen(
 
         if (showLocationSheet) {
             ModalBottomSheet(onDismissRequest = { showLocationSheet = false }) {
-                locationViewModel.cities.value
-                    .sortedBy { formatCityName(it.name ?: "") }
-                    .forEach { city ->
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = formatCityName(city.name ?: ""),
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
+                val cities = locationViewModel.cities.value
+
+                if (cities.isEmpty()) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                locationViewModel.selectCity(city.name ?: "")
-                                showLocationSheet = false
-                            }
-                    )
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    cities
+                        .sortedBy { formatCityName(it.name ?: "") }
+                        .forEach { city ->
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = formatCityName(city.name ?: ""),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        indication = LocalIndication.current,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) {
+                                        locationViewModel.selectCity(city.name ?: "")
+                                        showLocationSheet = false
+                                    }
+                            )
+                        }
                 }
                 Spacer(Modifier.height(30.dp))
             }

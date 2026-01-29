@@ -31,5 +31,7 @@ data class Restaurant(
     val cuisines: List<Cuisine> = emptyList(),
 
     // 🔒 NEVER NULL — FIXES ALL CRASHES
-    val meal_types: List<MealType> = emptyList()
+    val meal_types: List<MealType> = emptyList(),
+
+    val url: String?
 )

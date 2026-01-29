@@ -53,6 +53,7 @@ dependencies {
 
     // Images
     implementation(libs.coil.compose)
+    implementation(libs.androidx.foundation)
 
     // Testing
     testImplementation(libs.junit)

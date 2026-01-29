@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.eazyfind.data.model.Restaurant
@@ -19,46 +20,47 @@ import com.example.eazyfind.ui.themes.SuccessGreen
 import com.example.eazyfind.ui.utils.normalizeCity
 
 private fun formatCityForUi(value: String): String {
-    return normalizeCity(value)
+    val cleaned = value
+        .lowercase()
+        .replace("-", " ")
+        .trim()
+
+    if (cleaned == "ncr") return "NCR"
+
+    return cleaned
         .split(" ")
+        .filter { it.isNotBlank() }
         .joinToString(" ") { word ->
-            when (word) {
-                "ncr" -> "NCR"   // 🔒 force uppercase
-                else -> word.replaceFirstChar { it.uppercase() }
-            }
+            if (word == "ncr") "NCR"
+            else word.replaceFirstChar { it.uppercase() }
         }
 }
+
 
 private fun getAreaAndCity(
     area: String?,
     city: String?
 ): Pair<String?, String?> {
 
-    val formattedCity = city
-        ?.takeIf { it.isNotBlank() }
-        ?.let { formatCityForUi(it) }
+    val rawCity = city?.takeIf { it.isNotBlank() }
+    val formattedCity = rawCity?.let { formatCityForUi(it) }
 
-    val formattedArea = area
-        ?.takeIf { it.isNotBlank() }
-        ?.let { rawArea ->
+    val cleanedArea = area?.takeIf { it.isNotBlank() }?.let { rawArea ->
+        if (rawCity == null) {
+            rawArea
+        } else {
+            val parts = rawArea.split(",")
+            val lastPart = parts.lastOrNull()?.trim()
 
-            if (formattedCity == null) {
-                formatCityForUi(rawArea)
+            if (lastPart != null && lastPart.equals(rawCity, ignoreCase = true)) {
+                parts.dropLast(1).joinToString(",").trim()
             } else {
-                val parts = rawArea.split(",").map { it.trim() }
-
-                val cleanedParts =
-                    if (parts.lastOrNull()?.equals(formattedCity, ignoreCase = true) == true) {
-                        parts.dropLast(1)
-                    } else {
-                        parts
-                    }
-
-                formatCityForUi(cleanedParts.joinToString(", "))
+                rawArea
             }
         }
+    }
 
-    return formattedArea to formattedCity
+    return cleanedArea to formattedCity
 }
 
 @Composable
@@ -69,15 +71,17 @@ fun RestaurantCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .height(270.dp),
+//            .padding(3.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF2EED3)
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(5.dp)
     ) {
 
-        Column {
+        Column (
+            modifier = Modifier.fillMaxHeight()
+        ) {
 
             // 🌐 IMAGE FROM API
             AsyncImage(
@@ -95,56 +99,45 @@ fun RestaurantCard(
                 Text(
                     text = restaurant.restaurant_name,
                     style = MaterialTheme.typography.titleLarge,
-                    color = DarkText
+                    color = DarkText,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // AREA + COST
-                Row (
+                val (areaText, cityText) = getAreaAndCity(
+                    area = restaurant.area,
+                    city = restaurant.city
+                )
+
+                // 🔹 LINE 1: AREA + PRICE
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // 📍 AREA + CITY
-                    val (areaText, cityText) = getAreaAndCity(
-                        area = restaurant.area,
-                        city = restaurant.city
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                    // AREA (can wrap, defines height)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
                     ) {
-
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                        ) {
-
-                            // 📍 AREA (Line 1)
-                            areaText?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = DarkText
-                                )
-                            }
-
-                            // 🌆 CITY (Line 2)
-                            cityText?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = DarkText
-                                )
-                            }
+                        areaText?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DarkText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
+                    }
 
-                        // 👥 COST FOR TWO (always stable)
+                    // PRICE (always vertically centered)
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
                             text = "👥 ₹${restaurant.cost_for_two}",
                             style = MaterialTheme.typography.bodyMedium,
@@ -155,39 +148,51 @@ fun RestaurantCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // OFFER + RATING
+                // 🔹 LINE 2: CITY + RATING
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // 🟢 OFFER
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        border = BorderStroke(1.dp, SuccessGreen),
-                        color = Color.Transparent
-                    ) {
-                        restaurant.offer?.let { offer ->
-                            if (offer.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = offer,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = SuccessGreen,
-                                    textAlign = TextAlign.Start,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
+                    cityText?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DarkText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
 
-                    // ⭐ RATING
                     Text(
                         text = "⭐ ${restaurant.rating}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = DarkText
                     )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // 🟢 OFFER (FULL WIDTH)
+                restaurant.offer?.let { offer ->
+                    if (offer.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(6.dp),
+                            border = BorderStroke(1.dp, SuccessGreen),
+                            color = Color.Transparent
+                        ) {
+                            Text(
+                                text = offer,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = SuccessGreen,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -24,40 +24,40 @@ val AppTypography = Typography(
     // 🏷️ Restaurant Name (Listing)
     titleLarge = TextStyle(
         fontFamily = Poppins,
-        fontSize = 23.sp,
+        fontSize = 18.sp,
         fontWeight = FontWeight.Bold,
-        lineHeight = 27.sp
+        lineHeight = 22.sp
     ),
 
     // 🧩 SECTION HEADERS
     titleMedium = TextStyle(
         fontFamily = Poppins,
-        fontSize = 15.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
-        lineHeight = 21.sp
+        lineHeight = 18.sp
     ),
 
     // 🧷 SUB-SECTION HEADERS
     labelLarge = TextStyle(
         fontFamily = Poppins,
-        fontSize = 11.sp,
+        fontSize = 8.sp,
         fontWeight = FontWeight.Medium,
-        lineHeight = 15.sp
+        lineHeight = 12.sp
     ),
 
     // 📄 Body text
     bodyMedium = TextStyle(
         fontFamily = Poppins,
-        fontSize = 13.sp,
+        fontSize = 11.sp,
         fontWeight = FontWeight.Normal,
-        lineHeight = 19.sp
+        lineHeight = 16.sp
     ),
 
     // 🎁 Offer text
     bodyLarge = TextStyle(
         fontFamily = Poppins,
-        fontSize = 13.sp,
+        fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
-        lineHeight = 19.sp
+        lineHeight = 16.sp
     )
 )

@@ -205,7 +205,7 @@ fun RestaurantFilterSheet(
             /* ---------------- CUISINES ---------------- */
 
             item {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(10.dp))
                 Text("Cuisines", style = MaterialTheme.typography.titleMedium)
 
                 FlowRow {

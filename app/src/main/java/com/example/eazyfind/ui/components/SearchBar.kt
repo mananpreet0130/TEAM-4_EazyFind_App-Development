@@ -37,8 +37,8 @@ fun SearchBar(
                 value = query,
                 onValueChange = onQueryChange,
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    color = AppBackground
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = Color(0xFF7F6759)
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),

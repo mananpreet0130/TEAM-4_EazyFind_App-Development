@@ -7,6 +7,7 @@ import com.example.eazyfind.data.model.Restaurant
 import com.example.eazyfind.data.remote.RetrofitInstance
 import com.example.eazyfind.ui.filters.RestaurantFilter
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class RestaurantViewModel : ViewModel() {
 
@@ -23,6 +24,11 @@ class RestaurantViewModel : ViewModel() {
     private var currentPage = 1
     private var hasMore = true
 
+    val hasMoreData = mutableStateOf(true)
+    private val TAG = "RestaurantFetch"
+
+
+
     fun resetAndFetch(
         city: String?,
         name: String?,
@@ -34,6 +40,13 @@ class RestaurantViewModel : ViewModel() {
         restaurants.value = emptyList()
         loadedCount.value = 0
         fetchNextPage(city, name, filter)
+        Log.d(
+            TAG,
+            "FETCH TRIGGER | city=$city | name=$name | " +
+                    "cost=${filter.minCost}-${filter.maxCost} | " +
+                    "rating=${filter.rating} | discount=${filter.discount} | " +
+                    "mealIds=${filter.mealIds} | cuisineIds=${filter.cuisineIds}"
+        )
     }
 
     fun fetchNextPage(
@@ -43,7 +56,7 @@ class RestaurantViewModel : ViewModel() {
     ) {
         if (isLoading.value || !hasMore) return
 
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO){
             try {
                 isLoading.value = true
                 errorMessage.value = null
@@ -64,13 +77,24 @@ class RestaurantViewModel : ViewModel() {
 
                 val newItems = response.restaurants
 
+                Log.d(
+                    TAG,
+                    "API PAGE=$currentPage | fetched=${newItems.size} restaurants"
+                )
+
                 if (newItems.isEmpty()) {
                     hasMore = false
+                    hasMoreData.value = false
                 } else {
                     allRestaurants.addAll(newItems)
-                    restaurants.value = allRestaurants
+                    restaurants.value = allRestaurants.toList()
                     loadedCount.value = restaurants.value.size
                     currentPage++
+                    Log.d(
+                        TAG,
+                        "PAGE = ${currentPage-1} | TOTAL LOADED=${allRestaurants.size} | hasMore=$hasMore"
+                    )
+                    hasMoreData.value = true
                 }
 
             } catch (e: Exception) {
