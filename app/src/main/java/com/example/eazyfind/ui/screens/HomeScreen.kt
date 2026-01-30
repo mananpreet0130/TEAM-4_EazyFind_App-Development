@@ -12,19 +12,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.eazyfind.ui.components.*
-import com.example.eazyfind.ui.filters.RestaurantFilter
-import com.example.eazyfind.ui.filters.RestaurantFilterSheet
-import com.example.eazyfind.ui.themes.AppBackground
-import com.example.eazyfind.ui.themes.DarkText
-import com.example.eazyfind.ui.utils.mapCityForApi
-import com.example.eazyfind.viewmodel.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.ui.platform.LocalContext
+import com.example.eazyfind.ui.components.*
+import com.example.eazyfind.ui.filters.RestaurantFilter
+import com.example.eazyfind.ui.filters.RestaurantFilterSheet
+import com.example.eazyfind.ui.themes.AppBackground
+import com.example.eazyfind.ui.themes.DarkText
+import com.example.eazyfind.ui.themes.PrimaryColor
+import com.example.eazyfind.ui.utils.mapCityForApi
+import com.example.eazyfind.viewmodel.*
 
 private fun formatCityName(raw: String): String {
     return raw
@@ -39,41 +39,33 @@ private fun formatCityName(raw: String): String {
         }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    restaurantViewModel: RestaurantViewModel = viewModel(),
-    locationViewModel: LocationViewModel = viewModel(),
-    cuisineViewModel: CuisineViewModel = viewModel(),
-    mealTypeViewModel: MealTypeViewModel = viewModel(),
+    restaurantViewModel: RestaurantViewModel,
+    locationViewModel: LocationViewModel,
+    cuisineViewModel: CuisineViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    mealTypeViewModel: MealTypeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     onRestaurantClick: (String) -> Unit = {}
 ) {
 
     val restaurants = restaurantViewModel.restaurants.value
     val isLoading = restaurantViewModel.isLoading.value
     val error = restaurantViewModel.errorMessage.value
-
     val selectedCity = locationViewModel.selectedCity.value
 
     var searchQuery by remember { mutableStateOf("") }
     var showLocationSheet by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
-
     var apiFilter by remember { mutableStateOf(RestaurantFilter()) }
-
     var isRequestingNextPage by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
 
     /* ---------------- SEARCH ---------------- */
 
     LaunchedEffect(searchQuery) {
         kotlinx.coroutines.delay(500)
         restaurantViewModel.resetAndFetch(
-            city =
-                if (selectedCity == "Select Location") null
-                else mapCityForApi(selectedCity),
+            city = if (selectedCity == "Select Location") null else mapCityForApi(selectedCity),
             name = searchQuery.ifBlank { null },
             filter = apiFilter
         )
@@ -83,26 +75,19 @@ fun HomeScreen(
 
     LaunchedEffect(selectedCity, apiFilter) {
         restaurantViewModel.resetAndFetch(
-            city =
-                if (selectedCity == "Select Location") null
-                else mapCityForApi(selectedCity),
+            city = if (selectedCity == "Select Location") null else mapCityForApi(selectedCity),
             name = searchQuery.ifBlank { null },
             filter = apiFilter
         )
     }
 
-    /* ---------------- ENSURE FILTER DATA IS READY ---------------- */
+    /* ---------------- AUTO CITY SELECT ---------------- */
 
-    LaunchedEffect(Unit) {
-        cuisineViewModel.cuisines.value
-        mealTypeViewModel.mealTypes.value
-    }
+    val autoDetectedCity = restaurantViewModel.detectedCity.value
 
-    /* ---------------- PAGINATION RESET GUARD ---------------- */
-
-    LaunchedEffect(isLoading) {
-        if (!isLoading) {
-            isRequestingNextPage = false
+    LaunchedEffect(autoDetectedCity) {
+        if (autoDetectedCity != null && selectedCity == "Select Location") {
+            locationViewModel.selectCity(formatCityName(autoDetectedCity))
         }
     }
 
@@ -113,9 +98,7 @@ fun HomeScreen(
             .fillMaxSize()
             .background(AppBackground)
     ) {
-
         Column {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -127,11 +110,8 @@ fun HomeScreen(
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(bottom = 6.dp)
-                            .padding(top=24.dp)
-                            .padding(horizontal = 8.dp)
+                            .padding(top = 24.dp, bottom = 6.dp, start = 8.dp, end = 8.dp)
                     ) {
-
                         LocationSearchBar(
                             location =
                                 if (selectedCity == "Select Location")
@@ -149,162 +129,85 @@ fun HomeScreen(
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(2.dp))
-            Column(
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 8.dp)
             ) {
 
-                if (error != null) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error
+                itemsIndexed(restaurants) { index, restaurant ->
+
+                    if (
+                        index >= restaurants.lastIndex - 2 &&
+                        !isLoading &&
+                        !isRequestingNextPage &&
+                        restaurantViewModel.hasMoreData.value
+                    ) {
+                        isRequestingNextPage = true
+                        restaurantViewModel.fetchNextPage(
+                            city = if (selectedCity == "Select Location") null else mapCityForApi(selectedCity),
+                            name = searchQuery.ifBlank { null },
+                            filter = apiFilter
+                        )
+                    }
+
+                    RestaurantCard(
+                        restaurant = restaurant,
+                        onClick = {
+                            restaurant.url?.let { onRestaurantClick(it) }
+                        }
                     )
                 }
 
-                if (!isLoading && restaurants.isEmpty() && error == null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No restaurants found with the selected filters",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = DarkText.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-
-                    itemsIndexed(restaurants) { index, restaurant ->
-
-                        if (
-                            index >= restaurants.lastIndex - 2 &&
-                            !isLoading &&
-                            !isRequestingNextPage &&
-                            restaurantViewModel.hasMoreData.value
+                if (isLoading && restaurants.isNotEmpty()) {
+                    item(span = { GridItemSpan(2) }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            isRequestingNextPage = true
-
-                            restaurantViewModel.fetchNextPage(
-                                city =
-                                    if (selectedCity == "Select Location") null
-                                    else mapCityForApi(selectedCity),
-                                name = searchQuery.ifBlank { null },
-                                filter = apiFilter
-                            )
-                        }
-
-                        RestaurantCard(
-                            restaurant = restaurant,
-                            onClick = {
-                                restaurant.url?.let { onRestaurantClick(it) }
-                            }
-                        )
-
-                    }
-
-                    // LOADING MORE
-                    if (isLoading && restaurants.isNotEmpty()) {
-                        item(span = { GridItemSpan(2) }) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
-
-                    // PAGINATION ERROR + RETRY
-                    if (
-                        !isLoading &&
-                        error == null &&
-                        restaurants.isNotEmpty() &&
-                        !restaurantViewModel.hasMoreData.value
-                    ) {
-                        item(span = { GridItemSpan(2) }) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {                            }
-                        }
-                    }
-
-                    // NO MORE RESTAURANTS
-                    if (!isLoading && error == null && restaurants.isNotEmpty()) {
-                        item(span = { GridItemSpan(2) }) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "You’ve reached the end 🍽️",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = DarkText.copy(alpha = 0.6f)
-                                )
-                            }
+                            CircularProgressIndicator()
                         }
                     }
                 }
             }
         }
+
         /* ---------------- LOCATION SHEET ---------------- */
 
         if (showLocationSheet) {
             ModalBottomSheet(onDismissRequest = { showLocationSheet = false }) {
-                val cities = locationViewModel.cities.value
-
-                if (cities.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                locationViewModel.cities.value
+                    .sortedBy { formatCityName(it.name ?: "") }
+                    .forEach { city ->
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = formatCityName(city.name ?: ""),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    color = PrimaryColor,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    indication = LocalIndication.current,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) {
+                                    locationViewModel.selectCity(city.name ?: "")
+                                    showLocationSheet = false
+                                }
+                        )
                     }
-                } else {
-                    cities
-                        .sortedBy { formatCityName(it.name ?: "") }
-                        .forEach { city ->
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = formatCityName(city.name ?: ""),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(
-                                        indication = LocalIndication.current,
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    ) {
-                                        locationViewModel.selectCity(city.name ?: "")
-                                        showLocationSheet = false
-                                    }
-                            )
-                        }
-                }
                 Spacer(Modifier.height(30.dp))
             }
         }

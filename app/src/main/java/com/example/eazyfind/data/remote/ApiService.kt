@@ -21,8 +21,6 @@ interface ApiService {
         @Query("page") page: Int
     ): RestaurantResponse
 
-
-
     /* -------- CITIES -------- */
 
     @GET("cities")
@@ -39,4 +37,15 @@ interface ApiService {
 
     @GET("meal-types")
     suspend fun getMealTypes(): List<MealType>
+
+    data class CityResponse(
+        val city: String
+    )
+
+    @GET("/cities/getCity")
+    suspend fun getCityFromLatLon(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double
+    ): CityResponse
+
 }

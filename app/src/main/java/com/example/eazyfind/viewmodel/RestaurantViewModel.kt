@@ -8,13 +8,18 @@ import com.example.eazyfind.data.remote.RetrofitInstance
 import com.example.eazyfind.ui.filters.RestaurantFilter
 import kotlinx.coroutines.launch
 import android.util.Log
+import android.annotation.SuppressLint
+import android.content.Context
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class RestaurantViewModel : ViewModel() {
 
-    // 🔹 API-loaded list
+    // API-loaded list
     private val allRestaurants = mutableListOf<Restaurant>()
 
-    // 🔹 Exposed list
+    // Exposed list
     val restaurants = mutableStateOf<List<Restaurant>>(emptyList())
 
     val isLoading = mutableStateOf(false)
@@ -25,9 +30,10 @@ class RestaurantViewModel : ViewModel() {
     private var hasMore = true
 
     val hasMoreData = mutableStateOf(true)
+
+    val detectedCity = mutableStateOf<String?>(null)
+
     private val TAG = "RestaurantFetch"
-
-
 
     fun resetAndFetch(
         city: String?,
@@ -119,4 +125,42 @@ class RestaurantViewModel : ViewModel() {
             }
         }
     }
+    @SuppressLint("MissingPermission")
+    fun detectCityFromLocation(context: Context) {
+
+        val fusedLocationClient =
+            LocationServices.getFusedLocationProviderClient(context)
+
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+
+            if (location == null) {
+                Log.e("CityDetect", "Location is null")
+                return@addOnSuccessListener
+            }
+
+            val lat = location.latitude
+            val lon = location.longitude
+
+            Log.d("CityDetect", "Lat=$lat , Lon=$lon")
+
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getCityFromLatLon(
+                        lat = lat,
+                        lon = lon
+                    )
+
+                    val cityName = response.city   // 👈 depends on API response
+
+                    detectedCity.value = cityName
+
+                    Log.d("CityDetect", "Detected city = $cityName")
+
+                } catch (e: Exception) {
+                    Log.e("CityDetect", "City detection failed", e)
+                }
+            }
+        }
+    }
+
 }
