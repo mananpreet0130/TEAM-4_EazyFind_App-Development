@@ -5,9 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,37 +23,8 @@ import com.example.eazyfind.viewmodel.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.ui.platform.LocalContext
-import android.content.Intent
-import android.net.Uri
-import android.content.Context
-import android.content.pm.PackageManager
-
-fun openInChrome(context: Context, url: String) {
-    val uri = Uri.parse(url)
-
-    val chromePackage = "com.android.chrome"
-
-    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-        addCategory(Intent.CATEGORY_BROWSABLE)
-        setPackage(chromePackage)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-
-    try {
-        // Try opening in Chrome
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        // 🔁 Chrome not installed → fallback to system browser
-        val fallbackIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            addCategory(Intent.CATEGORY_BROWSABLE)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(fallbackIntent)
-    }
-}
 
 private fun formatCityName(raw: String): String {
     return raw
@@ -85,7 +53,6 @@ fun HomeScreen(
     val restaurants = restaurantViewModel.restaurants.value
     val isLoading = restaurantViewModel.isLoading.value
     val error = restaurantViewModel.errorMessage.value
-    val loadedCount = restaurantViewModel.loadedCount.value
 
     val selectedCity = locationViewModel.selectedCity.value
 
@@ -94,8 +61,6 @@ fun HomeScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
 
     var apiFilter by remember { mutableStateOf(RestaurantFilter()) }
-
-    var paginationError by remember { mutableStateOf<String?>(null) }
 
     var isRequestingNextPage by remember { mutableStateOf(false) }
 
@@ -242,21 +207,13 @@ fun HomeScreen(
                         RestaurantCard(
                             restaurant = restaurant,
                             onClick = {
-                                val url = restaurant.url ?: return@RestaurantCard
-
-                                val finalUrl =
-                                    if (url.startsWith("http://") || url.startsWith("https://"))
-                                        url
-                                    else
-                                        "https://$url"
-
-                                openInChrome(context, finalUrl)
+                                restaurant.url?.let { onRestaurantClick(it) }
                             }
                         )
 
                     }
 
-                    // 🔄 LOADING MORE
+                    // LOADING MORE
                     if (isLoading && restaurants.isNotEmpty()) {
                         item(span = { GridItemSpan(2) }) {
                             Box(
@@ -270,7 +227,7 @@ fun HomeScreen(
                         }
                     }
 
-                    // ❌ PAGINATION ERROR + RETRY
+                    // PAGINATION ERROR + RETRY
                     if (
                         !isLoading &&
                         error == null &&
@@ -287,7 +244,7 @@ fun HomeScreen(
                         }
                     }
 
-                    // ✅ NO MORE RESTAURANTS
+                    // NO MORE RESTAURANTS
                     if (!isLoading && error == null && restaurants.isNotEmpty()) {
                         item(span = { GridItemSpan(2) }) {
                             Box(

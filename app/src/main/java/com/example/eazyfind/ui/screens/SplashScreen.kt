@@ -32,7 +32,7 @@ fun SplashScreen(
             contentDescription = "App Logo",
             modifier = Modifier
                 .fillMaxWidth(0.8f)
-                .fillMaxHeight(), // logo takes most of the screen
+                .fillMaxHeight(),
             contentScale = ContentScale.Fit
         )
     }

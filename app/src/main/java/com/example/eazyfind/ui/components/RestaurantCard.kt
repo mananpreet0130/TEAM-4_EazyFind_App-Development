@@ -5,14 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CurrencyRupee
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Groups2
-import androidx.compose.material.icons.filled.Groups3
 import androidx.compose.material.icons.filled.PeopleOutline
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -28,7 +21,6 @@ import com.example.eazyfind.data.model.Restaurant
 import com.example.eazyfind.ui.themes.DarkText
 import com.example.eazyfind.ui.themes.PrimaryColor
 import com.example.eazyfind.ui.themes.SuccessGreen
-import com.example.eazyfind.ui.utils.normalizeCity
 
 private fun formatCityForUi(value: String): String {
     val cleaned = value
@@ -83,7 +75,6 @@ fun RestaurantCard(
         onClick = onClick,
         modifier = Modifier
             .height(270.dp),
-//            .padding(3.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF2EED3)
         ),
@@ -94,7 +85,7 @@ fun RestaurantCard(
             modifier = Modifier.fillMaxHeight()
         ) {
 
-            // 🌐 IMAGE FROM API
+            // IMAGE FROM API
             AsyncImage(
                 model = restaurant.image_url,
                 contentDescription = restaurant.restaurant_name,
@@ -106,7 +97,7 @@ fun RestaurantCard(
 
             Column(modifier = Modifier.padding(8.dp)) {
 
-                // 🍽️ NAME
+                // NAME
                 Text(
                     text = restaurant.restaurant_name,
                     style = MaterialTheme.typography.titleLarge,
@@ -122,13 +113,13 @@ fun RestaurantCard(
                     city = restaurant.city
                 )
 
-                // 🔹 LINE 1: AREA + PRICE
+                // LINE 1: AREA + PRICE
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // AREA (can wrap, defines height)
+                    // AREA
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -145,7 +136,7 @@ fun RestaurantCard(
                         }
                     }
 
-                    // PRICE (always vertically centered)
+                    // PRICE
                     Box(
                         contentAlignment = Alignment.Center
                     ) {
@@ -173,7 +164,7 @@ fun RestaurantCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // 🔹 LINE 2: CITY + RATING
+                // LINE 2: CITY + RATING
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -214,7 +205,7 @@ fun RestaurantCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 🟢 OFFER (FULL WIDTH)
+                // 🟢 OFFER
                 restaurant.offer?.let { offer ->
                     if (offer.isNotBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))

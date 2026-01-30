@@ -4,31 +4,30 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.example.eazyfind.ui.themes.AppTypography
 
 private val LightColorScheme = lightColorScheme(
 
-    // 🎯 Brand Primary
+    // Brand Primary
     primary = PrimaryColor,
     onPrimary = Color.White,
 
-    // ✨ Secondary / Accent (Gold)
+    // Secondary / Accent (Gold)
     secondary = GoldAccent,
     onSecondary = DarkText,
 
-    // 🌸 App Background
+    // App Background
     background = AppBackground,
     onBackground = DarkText,
 
-    // 🧾 Surfaces
+    // Surfaces
     surface = AppBackground,
     onSurface = DarkText,
 
-    // 🌿 Success / Offers
+    // Success / Offers
     tertiary = SuccessGreen,
     onTertiary = Color.White,
 
-    // ❌ Errors
+    // Errors
     error = ErrorRed,
     onError = Color.White
 )

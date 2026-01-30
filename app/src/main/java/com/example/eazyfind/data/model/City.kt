@@ -5,6 +5,6 @@ import com.google.gson.annotations.SerializedName
 data class City(
     val id: Int,
 
-    @SerializedName("city_name") // 👈 backend field name
+    @SerializedName("city_name")
     val name: String?
 )

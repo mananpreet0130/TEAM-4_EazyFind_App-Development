@@ -7,6 +7,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.eazyfind.ui.screens.HomeScreen
 import com.example.eazyfind.ui.screens.SplashScreen
 import com.example.eazyfind.viewmodel.RestaurantViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import java.net.URLDecoder
+import java.net.URLEncoder
+import com.example.eazyfind.ui.screens.WebViewScreen
+
 
 @Composable
 fun AppNavGraph(viewModel: RestaurantViewModel) {
@@ -16,6 +22,7 @@ fun AppNavGraph(viewModel: RestaurantViewModel) {
         navController = navController,
         startDestination = "splash"
     ) {
+
         composable("splash") {
             SplashScreen {
                 navController.navigate("home") {
@@ -25,7 +32,24 @@ fun AppNavGraph(viewModel: RestaurantViewModel) {
         }
 
         composable("home") {
-            HomeScreen()
+            HomeScreen(
+                onRestaurantClick = { url ->
+                    val encodedUrl = URLEncoder.encode(url, "UTF-8")
+                    navController.navigate("webview/$encodedUrl")
+                }
+            )
+        }
+
+        composable(
+            route = "webview/{url}",
+            arguments = listOf(
+                navArgument("url") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedUrl = backStackEntry.arguments?.getString("url") ?: return@composable
+            val decodedUrl = URLDecoder.decode(encodedUrl, "UTF-8")
+
+            WebViewScreen(url = decodedUrl)
         }
     }
 }

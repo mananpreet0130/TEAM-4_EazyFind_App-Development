@@ -21,7 +21,7 @@ private val Poppins = FontFamily(
 
 val AppTypography = Typography(
 
-    // 🏷️ Restaurant Name (Listing)
+    // Restaurant Name
     titleLarge = TextStyle(
         fontFamily = Poppins,
         fontSize = 18.sp,
@@ -29,7 +29,7 @@ val AppTypography = Typography(
         lineHeight = 22.sp
     ),
 
-    // 🧩 SECTION HEADERS
+    // SECTION HEADERS
     titleMedium = TextStyle(
         fontFamily = Poppins,
         fontSize = 12.sp,
@@ -37,7 +37,7 @@ val AppTypography = Typography(
         lineHeight = 18.sp
     ),
 
-    // 🧷 SUB-SECTION HEADERS
+    // SUB-SECTION HEADERS
     labelLarge = TextStyle(
         fontFamily = Poppins,
         fontSize = 8.sp,
@@ -45,7 +45,7 @@ val AppTypography = Typography(
         lineHeight = 12.sp
     ),
 
-    // 📄 Body text
+    // Body text
     bodyMedium = TextStyle(
         fontFamily = Poppins,
         fontSize = 11.sp,
@@ -53,7 +53,7 @@ val AppTypography = Typography(
         lineHeight = 16.sp
     ),
 
-    // 🎁 Offer text
+    // Offer text
     bodyLarge = TextStyle(
         fontFamily = Poppins,
         fontSize = 11.sp,
